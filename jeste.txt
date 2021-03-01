@@ -1,0 +1,203 @@
+import java.io.File;
+import java.io.FileWriter;
+import java.security.acl.LastOwnerException;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
+public class JSONMaker {
+	
+	public static JSONObject createJSON(String input) {
+		String []parts = input.split(" : ");
+		String identitet = parts[0];
+		String brojIndexa = identitet.split(" ")[0];
+		String imePrezime = identitet.replaceAll(brojIndexa, "").trim();
+		JSONObject obj = new JSONObject();
+		obj.put("indexNumber", brojIndexa);
+		obj.put("fullName", imePrezime);
+		
+
+		String[] predmeti = parts[1].split(", ");
+		JSONArray arr = new JSONArray();
+		
+		for (int i = 0; i < predmeti.length; i++) {
+			String sub = predmeti[i].trim();
+			String imePredmeta = sub.substring(0, sub.lastIndexOf(" "));
+			int ocjena = Integer.parseInt(sub.substring(sub.lastIndexOf(" ")+1));
+			
+			JSONObject objPredmeta = new JSONObject();
+			objPredmeta.put("predmet", sub);
+			objPredmeta.put("ocjena", ocjena);
+			
+			arr.add(objPredmeta);
+			
+			
+		}
+		obj.put("predmeti", arr);
+		return obj;
+
+	}
+}
+
+
+import org.json.simple.JSONObject;
+
+public class Main {
+
+	public static void main(String[] args) {
+		JSONObject o = JSONMaker.createJson(
+				"01-20 Marko Markovic : Matematika 10, Programiranje I 9, Uvod u baze podataka 8, XML tehnologije 10, Engleski jezik I 9");
+		System.out.println(o);
+	}
+}
+
+
+
+
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
+public class University {
+
+	private String name;
+	private String webpage;
+	private List<Student> studentList;
+	
+	
+	public University(String fileName) {
+		super();
+		read(fileName);
+	}
+	
+	public void read(String fileName) {
+		JSONParser parser = new JSONParser();
+		
+		try {
+			JSONObject obj = (JSONObject) parser.parse(new FileReader(new File(fileName)));
+			JSONObject objUni = (JSONObject) obj.get("university");
+			name = (String) objUni.get("name");
+			webpage = (String) objUni.get("webpage");
+			JSONArray students = (JSONArray) obj.get("students");
+			studentList = new ArrayList<Student>();
+			for (Object o : students) {
+				JSONObject student =  (JSONObject) o;
+				String name = (String) student.get("name");
+				long year = (long) student.get("year");
+				boolean undergraduate = (boolean) student.get("undergraduate");
+				String grade = (String) student.get("grade");
+				JSONObject address = (JSONObject) student.get("address");
+				String city = (String) address.get("city");
+				String country = (String) address.get("country");
+				long zip = (long) address.get("zip");
+				
+				Address a = new Address(city, country,(int) zip);
+				Student s = new Student(name,(int) year, undergraduate, grade, a);
+				studentList.add(s);
+				
+				
+				
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+	}
+	
+	public void export (int year,String fileName) {
+		JSONObject obj = new JSONObject();
+		JSONArray students = new JSONArray();
+		for (Student s : studentList) {
+			if(s.getYear() >= year) {
+				JSONObject st = new JSONObject();
+				st.put("name", s.getName());
+				st.put("year", s.getYear());
+				st.put("grade", s.getGrade());
+				students.add(st);
+			}
+		}
+		obj.put("students", students);
+		System.out.println(obj);
+		try {
+			FileWriter writer = new FileWriter(new File(fileName));
+			writer.write(obj.toJSONString());
+			writer.flush();
+			writer.close();
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+	}
+	
+	public void show() {
+		System.out.println("University: " + name);
+		System.out.println("Webpage: " + webpage);
+		System.out.println("Students: ");
+		for (Student student : studentList) {
+			System.out.println(student);
+		}
+	}
+	
+	
+	
+}
+
+
+public class Student {
+private String name;
+private int year;
+private boolean undergraduate;
+private String grade;
+private Address address;
+public Student(String name, int year, boolean undergraduate, String grade, Address address) {
+	super();
+	this.name = name;
+	this.year = year;
+	this.undergraduate = undergraduate;
+	this.grade = grade;
+	this.address = address;
+}
+public String getName() {
+	return name;
+}
+public void setName(String name) {
+	this.name = name;
+}
+public int getYear() {
+	return year;
+}
+public void setYear(int year) {
+	this.year = year;
+}
+public boolean isUndergraduate() {
+	return undergraduate;
+}
+public void setUndergraduate(boolean undergraduate) {
+	this.undergraduate = undergraduate;
+}
+public String getGrade() {
+	return grade;
+}
+public void setGrade(String grade) {
+	this.grade = grade;
+}
+public Address getAddress() {
+	return address;
+}
+public void setAddress(Address address) {
+	this.address = address;
+}
+@Override
+public String toString() {
+	return "Student: " + name + ", year: " + year + ", undergraduate: "
+			+ undergraduate + ", grade: " + grade + ", "+ address;
+}
+
+
+
+}
